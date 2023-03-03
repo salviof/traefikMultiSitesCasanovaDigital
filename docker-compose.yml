@@ -1,0 +1,70 @@
+version: "3.6"
+services:
+
+######### FRONTENDS ##########
+
+# Traefik Reverse Proxy
+  traefik:
+    hostname: traefik
+    image: traefik:1.7
+    container_name: traefik
+    command:
+    - '--configFile=/etc/traefik/traefik.toml \'
+    - '--logLevel=WARN'
+
+    restart: always
+    domainname: nuvem.casanovadigital.com.br
+    networks:
+      - default
+      - traefik_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+#      - "XXXX:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=traefik"
+      - "traefik.frontend.rule=Host:firewall.MEUDOMINIO.COM.BR"  
+      - "traefik.port=8080"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=firewall.MEUDOMINIO.COM.BR"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.auth.forward.address=http://traefik-forward-auth:4181"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/traefik/configServidor/traefik:/etc/traefik/:z
+      - /opt/traefik/configServidor/shared:/shared:z
+
+
+  traefik-forward-auth:
+    image: thomseddon/traefik-forward-auth
+    container_name: auth-admin
+    environment:
+      - CLIENT_ID=123_MINHA_CHAVE_PUBLICA.apps.googleusercontent.com
+      - CLIENT_SECRET=eW5l_MINHA_CHAVE_SECRETA
+      - SECRET=CHAVE_SECRETA
+      - COOKIE_SECURE=false
+      - WHITELIST=MEUEMAIL@CASANOVADIGITAL.COM.BR
+    networks:
+      - traefik_proxy
+    # When using an auth host, adding it here prompts traefik to generate certs
+    labels:
+      - traefik.enable=true
+      - traefik.port=4181
+      - traefik.backend=traefik-forward-auth
+
+
+networks:
+  traefik_proxy:
+    external:
+      name: traefik_proxy
+  default:
+    driver: bridge

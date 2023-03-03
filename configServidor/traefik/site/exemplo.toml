@@ -1,0 +1,50 @@
+[backends]
+
+  [backends.meusitePublicado]
+    [backends.meusitePublicado.servers.server1]
+       url = "http://192.168.0.01:8008" 
+[frontends]
+ 
+  [frontends.meusitePublicado]
+      backend = "wordpresscasanovadigitalwp"
+      passHostHeader = true 
+      [frontends.meusitePublicado.routes.rotapadrao]
+          rule = "Host:www.MEUSITE.COM.BR,MEUSITE.COM.BR"
+      [frontends.meusitePublicado.redirect]
+          rule = "Host:MEUSITE.com.br,www.MEUSITE.com.br" 
+          regex = "(\\w)([/][/])"
+          replacement = "$1/"
+          permanent = true 
+
+  [frontends.meusitePublicadoEnderecoSeguro]
+      backend = "wordpresscasanovadigitalwp"
+      entryPoints = ["http", "https"]
+      passHostHeader = true
+  [frontends.meusitePublicadoEnderecoSeguro.routes.rotapadrao]
+      rule = "Host:MEUSITE.com.br;Path:/admin"
+  [frontends.meusitePublicadoEnderecoSeguro.auth.forward]
+      address = "http://traefik-auth-parceiro:4181" 
+  [frontends.wordpresscasanovadigitalwpadminFront]
+      backend = "wordpresscasanovadigitalwpadmin"
+      passHostHeader = true 
+      [frontends.wordpresscasanovadigitalwpadminFront.routes.rotapadrao]
+          rule = "Host:bancowp.casanovadigital.com.br"
+      [frontends.wordpresscasanovadigitalwpadminFront.auth.forward]
+          address = "http://traefik-forward-auth:4181" 
+
+  [frontends.wordpresscasanovadigitalwpimagensFront]
+      backend = "wordpresscasanovadigitalwpimagens"
+      passHostHeader = true 
+      [frontends.wordpresscasanovadigitalwpimagensFront.headers.customrequestheaders]
+          enderecobucket = "wordpress-casanova.s3.amazonaws.com"
+      [frontends.wordpresscasanovadigitalwpimagensFront.routes.rotapadrao]
+          rule = "Host:imagens.MEUSITE.com.br"
+      [frontends.wordpresscasanovadigitalwpimagensFront.ratelimit]
+          extractorfunc = "client.ip"
+      [frontends.wordpresscasanovadigitalwpimagensFront.ratelimit.rateset.rateset1]
+          period = "10s"
+          average = 1
+          burst = 200
+#https://github.com/traefik/traefik/issues/4549
+
+
